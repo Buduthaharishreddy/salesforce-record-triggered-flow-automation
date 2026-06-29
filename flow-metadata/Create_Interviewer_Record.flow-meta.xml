@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Flow: Create Interviewer Record
+  Type: Record-Triggered Flow (After Save)
+  Trigger Object: Position__c
+  Author: Budutha Harish Reddy
+  Created: 29/06/2026
+
+  Purpose:
+    Automatically creates an Interviewer__c record whenever a new Position__c
+    record is saved with a Hiring Manager assigned. Eliminates manual data entry
+    and ensures every position with a hiring manager has a linked interviewer record.
+-->
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+
+    <!-- ==================== METADATA ==================== -->
+    <apiVersion>61.0</apiVersion>
+    <label>Create Interviewer Record</label>
+    <status>Active</status>
+    <processType>AutoLaunchedFlow</processType>
+    <triggerType>RecordAfterSave</triggerType>
+
+    <!-- ==================== TRIGGER ==================== -->
+    <!--
+      Fires when a Position record is CREATED (not updated).
+      Condition: Hiring_Manager__c must not be null.
+      This ensures we only create interviewer records for positions
+      that actually have a hiring manager assigned.
+    -->
+    <start>
+        <locationX>176</locationX>
+        <locationY>0</locationY>
+        <object>Position__c</object>
+        <recordTriggerType>Create</recordTriggerType>
+        <triggerType>RecordAfterSave</triggerType>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <!-- Condition 1: Hiring Manager must be populated -->
+            <field>Hiring_Manager__c</field>
+            <operator>IsNull</operator>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </filters>
+        <connector>
+            <targetReference>Create_Interviewer_Record</targetReference>
+        </connector>
+    </start>
+
+    <!-- ==================== ACTION: CREATE RECORDS ==================== -->
+    <!--
+      Creates a new Interviewer__c record with:
+        - Employee__c  → The Hiring Manager from the triggering Position
+        - Position__c  → The ID of the triggering Position record
+
+      This links the interviewer directly back to the position and
+      pre-populates the employee field so no manual lookup is needed.
+    -->
+    <recordCreates>
+        <name>Create_Interviewer_Record</name>
+        <label>Create Interviewer Record</label>
+        <locationX>176</locationX>
+        <locationY>288</locationY>
+        <inputAssignments>
+            <!-- Map Hiring Manager → Employee field on Interviewer -->
+            <field>Employee__c</field>
+            <value>
+                <elementReference>$Record.Hiring_Manager__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <!-- Map Position Record ID → Position lookup on Interviewer -->
+            <field>Position__c</field>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Interviewer__c</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordCreates>
+
+</Flow>
